@@ -1,0 +1,322 @@
+package com.example.zomebie.myapplication01;
+
+import android.app.Activity;
+import android.graphics.Color;
+import android.os.Bundle;
+import android.os.Looper;
+import android.util.Log;
+import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.Spinner;
+import android.widget.TextView;
+import android.widget.Toast;
+import java.util.HashMap;
+import java.util.Iterator;
+
+import com.google.android.youtube.player.YouTubeBaseActivity;
+import com.google.android.youtube.player.YouTubeInitializationResult;
+import com.google.android.youtube.player.YouTubePlayer;
+import com.google.android.youtube.player.YouTubePlayer.ErrorReason;
+import com.google.android.youtube.player.YouTubePlayer.PlayerStateChangeListener;
+import com.google.android.youtube.player.YouTubePlayer.Provider;
+import com.google.android.youtube.player.YouTubePlayerView;
+import com.google.android.youtube.player.YouTubePlayer.PlaybackEventListener;
+
+class Thr extends Thread {
+
+
+    private Lyrics ly;
+    private ButtonClass bc;
+    private MainActivity.YouTube mt;
+
+    Thr(Lyrics ly, ButtonClass bc, MainActivity.YouTube mt)
+    {
+        this.ly = ly;
+        this.bc = bc;
+        this.mt=mt;
+
+
+    } // Thr 생성자
+    public synchronized void run()
+    {
+        Log.v("dd","run");
+
+        while (true)
+        {
+
+            if (ly.hm.containsKey(mt.myYouTubePlayer.getCurrentTimeMillis() / 1000 ))
+            {
+
+                bc.tv.setText(ly.hm.get(mt.myYouTubePlayer.getCurrentTimeMillis() / 1000));
+
+            }// if 문
+        }// while 문
+    }// run()함수
+} // Thr class
+class Lyrics {
+
+    public HashMap<Integer, String> hm;  // key->seconds, value->lyrics
+    public int key2[];  // an int type container for key
+    Lyrics(final Activity myActivity)
+    {
+
+        hm = new HashMap<>();
+
+        hm.put(0, myActivity.getResources().getString(R.string.l1));
+        hm.put(4, myActivity.getResources().getString(R.string.l2));
+        hm.put(8, myActivity.getResources().getString(R.string.l3));
+        hm.put(12, myActivity.getResources().getString(R.string.l4));
+        hm.put(16, myActivity.getResources().getString(R.string.l5));
+        hm.put(20, myActivity.getResources().getString(R.string.l6));
+
+
+        Iterator<Integer> it = hm.keySet().iterator();
+        key2 = new int[hm.size()];
+
+        int i = 0;
+        while (it.hasNext())
+        {
+
+            key2[i] = it.next();
+            i++;
+
+
+        } // while
+    } // Lyrics 생성자
+} // Lyrics 클래스
+class ButtonClass {
+
+    private Button phraseButton; // 가사를 저장할 버튼
+    private Button songButton;      // 재생할 영상(제목)을 저장할 버튼
+    public TextView tv;  // 가사를 띄울 TextView
+    ButtonClass(final Activity myActivity)
+    {
+
+        phraseButton = myActivity.findViewById(R.id.button2);
+        songButton = myActivity.findViewById(R.id.button3);
+        tv = myActivity.findViewById(R.id.textView);
+
+        phraseButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                // 영상과 가사 멈추기
+                // textView 에서 해당 가사 받아서 넘겨주기( 단어장 페이지 완성되면 )
+                Toast.makeText(myActivity, "문장이 추가되었습니다.", Toast.LENGTH_LONG).show(); // 넘겨줬으면 확인 메세지 띄워주고
+                // 영상, 타이머 다시 시작
+            }
+        });
+
+        songButton.setOnClickListener(new View.OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+
+                Toast.makeText(myActivity, "영상이 즐겨찾기에 추가되었습니다.", Toast.LENGTH_LONG).show();
+                songButton.setBackgroundColor(Color.argb(0xff, 132, 132, 130)); // 버튼의 색깔 회색으로 바뀌고
+                songButton.setClickable(false);  // 더 이상누를수없게
+            }
+        });
+
+
+    } // ButtonClass 생성자
+} // ButtonClass 클래스
+class SubTitle {
+
+    private Spinner sp;
+    private String[] str;
+    private ArrayAdapter<String> adapter;
+
+    SubTitle(final Activity ac) {
+
+
+        sp = ac.findViewById(R.id.spinner);
+        str = new String[]{"영어", "한국어", "영어+한국어"}; // 스피너에 넣고 싶은 목록
+        adapter = new ArrayAdapter<>(ac, android.R.layout.simple_spinner_item, str); // 스퍼너와 스피너 목록을 연결시켜 줄 어댑터
+        sp.setAdapter(adapter); // 스피너에 만들어준 어댑터 채우기
+        sp.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+
+                switch (position)
+                {
+
+                    case 0:
+
+                        break; // 영어 가사
+                    case 1:
+                        break; // 한국어 가사
+                    case 2:
+                        break; // 영어와 한국어 같이
+                    default:
+                        break;
+
+                } // switch
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+
+            }
+
+        }); // setOnItemSelected 함수 끝
+    } // SubTitle constructor
+}// SubTitle class
+public class MainActivity extends YouTubeBaseActivity {
+
+    private YouTube youTube = null;
+    private ButtonClass bc = null;
+    private SubTitle st = null;
+    private Lyrics ly = null;
+    private Thr thr = null;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState)
+    {
+
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+
+        bc = new ButtonClass(this); // 레이아웃(버튼2개와 텍스트뷰) 클래스
+        st = new SubTitle(this); // 스피너 관리 클래스
+        ly = new Lyrics(this); // 가사 저장 클래스
+        youTube = new YouTube(); // 유튜브 영상 클래스 ( innerClass 로 생성 )
+        thr = new Thr(ly,bc,youTube);  // sync thread class
+        thr.setDaemon(true); // thr class 를 데몬 스레드로 만들기 > 보조 쓰레드 > 메인스레드가 끝나면 자동종료
+        Log.d("hello",Thread.currentThread()+"");
+        boolean test = Looper.getMainLooper() == Looper.myLooper();
+        Log.d("토할거같아",test+"");
+    } // OnCreate 함수 끝
+    // innerClass YouTube
+    class YouTube implements YouTubePlayer.Provider
+    {
+
+        public static final String API_KEY = "AIzaSyCsaiAc4liJ9if0n1N_xAMUygpav0OB3YM ";
+        public static final String VIDEO_ID = "aOJAWl12kII";
+
+        public YouTubePlayerView youTubePlayerView;
+        public YouTubePlayer myYouTubePlayer = null;
+
+        boolean flag;
+
+        public YouTube()
+        {
+            flag =false;
+
+            youTubePlayerView = findViewById(R.id.youtube_player); // 영상 띄울 곳
+            youTubePlayerView.initialize(API_KEY, new YouTubePlayer.OnInitializedListener() { // 어떤 영상을 띄울 지
+                @Override
+                public void onInitializationSuccess(Provider provider, YouTubePlayer youTubePlayer, boolean b) {
+
+                    youTubePlayer.setPlayerStateChangeListener(playerStateChangeListener);
+                    youTubePlayer.setPlaybackEventListener(playbackEventListener);
+
+                    if (!b) {
+
+                        youTubePlayer.cueVideo(VIDEO_ID); // 우리가 넣고자 하는 영상 넣기
+                    }
+
+                    myYouTubePlayer = youTubePlayer; // YouTubePlayer interface 안에 우리가 쓰고자 하는 getCurrentTimeMills()가 있음, 메소드의
+                    //매개변수로 YouTubePlayer 인스턴스 생성
+                }
+
+                @Override
+                public void onInitializationFailure(Provider provider, YouTubeInitializationResult youTubeInitializationResult) {
+                    Log.d("mini1", "initialization fail");
+
+                }
+            });
+
+
+        } // youTubePlayerView.initialize
+        private PlaybackEventListener playbackEventListener = new PlaybackEventListener() {
+
+            @Override
+            public void onPlaying() {
+
+                Log.v("dd","onPlaying");
+
+
+
+
+
+
+
+            }
+
+            @Override
+            public void onPaused() {
+
+
+            Log.v("dd","onPaused");
+
+            }
+
+            @Override
+            public void onStopped() {
+
+            }
+
+            @Override
+            public void onBuffering(boolean b) {
+
+            }
+
+            @Override
+            public void onSeekTo(int i) {
+
+            }
+
+
+        }; // PlaybackEventListener interface
+        private PlayerStateChangeListener playerStateChangeListener = new PlayerStateChangeListener() {
+
+            @Override
+            public void onLoading() {
+
+            }
+
+            @Override
+            public void onLoaded(String s) {
+
+            }
+
+            @Override
+            public void onAdStarted() {
+
+            }
+
+            @Override
+            public void onVideoStarted() {
+
+                if(!flag)
+                {
+
+                    flag=true;
+
+                    thr.start(); // 영상 처음 시작할때만  데몬스레드 start
+                }
+
+            }
+
+            @Override
+            public void onVideoEnded() {
+
+            }
+
+            @Override
+            public void onError(ErrorReason errorReason) {
+
+            }
+
+        }; //PlayerStateChangeListener interface
+        @Override
+        public void initialize(String s, YouTubePlayer.OnInitializedListener onInitializedListener) {
+
+        }
+
+    } // YouTube innerclass
+} // MainActivity class
