@@ -28,6 +28,7 @@ final class Tag
 {
     public static final String _TAG="debug";
 }
+
 class Thr extends AsyncTask <Void, Void, Void> {
 
     private SubTitle st;  //SubTitle 클래스
@@ -43,6 +44,7 @@ class Thr extends AsyncTask <Void, Void, Void> {
 
     } // Thr 생성자
     @Override
+    //perform an operation on a background thread
     protected Void doInBackground(Void... voids)
     {
 
@@ -64,13 +66,13 @@ class Thr extends AsyncTask <Void, Void, Void> {
             if (st.hm.containsKey(mt.myYouTubePlayer.getCurrentTimeMillis() / 1000))
             {
                 // 해당 시간에 맞는 가사 띄우기
-                publishProgress();
-
+                publishProgress();  // onProgressUpdate() 메소드 호출
             }// if 문
         }// while 문
     }
 
     @Override
+    // 메인 메소드에게 UI 작업을 시킴 from publishProgress() in doInBackground()
     protected void onProgressUpdate(Void... values)
     {
 
@@ -296,8 +298,7 @@ public class MainActivity extends YouTubeBaseActivity {
             @Override
             public void onVideoStarted() {
 
-                if (!flag) {
-
+                if (!flag) {// execute 는 한번만 불러져야 한다
                     flag = true;
 
                     thr.execute();
@@ -310,7 +311,7 @@ public class MainActivity extends YouTubeBaseActivity {
             public void onVideoEnded() {
 
                 thr.cancel(true);
-
+                //단점:AsyncTask를 execute한 Activity가 종료되었을 때 별도의 지시가 없다면 AsyncTask는 종료되지 않고 계속 돌아간다.
             }
 
             @Override
